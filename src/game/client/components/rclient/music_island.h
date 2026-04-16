@@ -15,6 +15,9 @@
 #include <thread>
 
 class CUi;
+class IClient;
+class ITextRender;
+struct CNetObj_GameInfo;
 
 class CMusicIsland : public CComponent
 {
@@ -76,6 +79,7 @@ class CMusicIsland : public CComponent
 
 	void ResetMusicInfo();
 	void ResetMusicImage();
+	void ResetRuntimeState();
 	SMusicInfo GetMusicInfo() const;
 	void RenderMusicIsland();
 	void RenderMusicIslandControls(CUIRect *pBase, const SMusicInfo &MusicInfo, vec2 MousePos, bool MouseClicked, bool MousePressed, float AnimProgress);

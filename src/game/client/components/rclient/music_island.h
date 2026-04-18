@@ -79,6 +79,7 @@ class CMusicIsland : public CComponent
 
 	void ResetMusicInfo();
 	void ResetMusicImage();
+	void ResetVisualState();
 	void ResetRuntimeState();
 	SMusicInfo GetMusicInfo() const;
 	void RenderMusicIsland();

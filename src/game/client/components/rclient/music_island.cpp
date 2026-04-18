@@ -821,15 +821,20 @@ void CMusicIsland::ResetMusicImage()
 	m_MusicImageHeight = 0;
 }
 
+void CMusicIsland::ResetVisualState()
+{
+	m_Extended = false;
+	m_ExtendAnim = 0.0f;
+	m_LastNativeMousePressed = false;
+	m_Rect = {};
+}
+
 void CMusicIsland::ResetRuntimeState()
 {
 	StopInfoWorker();
 	StopImageWorker();
-	m_Extended = false;
-	m_ExtendAnim = 0.0f;
-	m_LastNativeMousePressed = false;
+	ResetVisualState();
 	m_NextInfoUpdateTime = 0;
-	m_Rect = {};
 	ResetMusicInfo();
 	ResetMusicImage();
 }
@@ -852,7 +857,7 @@ void CMusicIsland::SetExtended(bool Extended)
 
 void CMusicIsland::OnReset()
 {
-	ResetRuntimeState();
+	ResetVisualState();
 }
 
 void CMusicIsland::OnShutdown()
@@ -909,7 +914,7 @@ void CMusicIsland::RenderHud()
 	}
 	if(!CanRenderMusicIslandForClientState(Client()))
 	{
-		ResetRuntimeState();
+		ResetVisualState();
 		return;
 	}
 

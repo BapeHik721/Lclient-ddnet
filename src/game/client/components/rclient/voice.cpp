@@ -1456,6 +1456,13 @@ void CRClientVoice::ProcessCapture()
 	}
 	if(!Online || LocalClientId < 0 || LocalClientId >= MAX_CLIENTS)
 		return;
+	int AuthClientId = LocalClientId;
+	if(m_pGameClient)
+	{
+		const int BaseClientId = m_pGameClient->m_aLocalIds[0];
+		if(BaseClientId >= 0 && BaseClientId < MAX_CLIENTS)
+			AuthClientId = BaseClientId;
+	}
 
 	char aGameServerIp[VOICE_MAX_SERVER_IP_BYTES];
 	int GameServerPort = 0;
@@ -1529,7 +1536,7 @@ void CRClientVoice::ProcessCapture()
 		WriteU16(aPacket + Offset, (uint16_t)GameServerPort);
 		Offset += sizeof(uint16_t);
 		aPacket[Offset++] = TxFlags;
-		WriteU16(aPacket + Offset, (uint16_t)LocalClientId);
+		WriteU16(aPacket + Offset, (uint16_t)AuthClientId);
 		Offset += sizeof(uint16_t);
 		WriteU16(aPacket + Offset, m_Sequence);
 		Offset += sizeof(uint16_t);
@@ -1586,8 +1593,6 @@ void CRClientVoice::ProcessCapture()
 		SDL_ClearQueuedAudio(m_CaptureDevice);
 		return;
 	}
-
-
 
 	const int ClientId = LocalClientId;
 	const vec2 Pos = LocalPos;

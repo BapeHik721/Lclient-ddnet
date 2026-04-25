@@ -45,6 +45,11 @@ public:
 	bool m_FastInputHookAction = false;
 	bool m_FastInputFireAction = false;
 
+	// LClient
+	int m_AimbotKey = 0;
+	int m_TriggerbotKey = 0;
+	bool m_aHookByTriggerbot[NUM_DUMMIES] = {};
+
 	CControls();
 	int Sizeof() const override { return sizeof(*this); }
 

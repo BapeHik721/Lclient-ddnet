@@ -268,7 +268,7 @@ MACRO_CONFIG_INT(TcExecuteOnJoinDelay, tc_execute_on_join_delay, 2, 7, 50000, CF
 MACRO_CONFIG_STR(TcCustomCommunitiesUrl, tc_custom_communities_url, 256, "https://raw.githubusercontent.com/SollyBunny/ddnet-custom-communities/refs/heads/main/custom-communities-ddnet-info.json", CFGFLAG_CLIENT | CFGFLAG_SAVE, "URL to fetch custom communities from (must be https), empty to disable")
 
 // Discord RPC
-MACRO_CONFIG_INT(TcDiscordRPC, tc_discord_rpc, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Toggle discord RPC (requires restart)") // broken
+MACRO_CONFIG_INT(TcDiscordRPC, tc_discord_rpc, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Toggle discord RPC (requires restart)")
 
 MACRO_CONFIG_INT(TcShowLocalTimeSeconds, tc_show_local_time_seconds, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show local time in seconds")
 
@@ -282,3 +282,15 @@ MACRO_CONFIG_INT(TcUiCompactList, tc_ui_compact_list, 0, 0, 1, CFGFLAG_CLIENT | 
 MACRO_CONFIG_INT(TcShowhudDummyPosition, tc_showhud_dummy_position, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD (Dummy Position)")
 MACRO_CONFIG_INT(TcShowhudDummySpeed, tc_showhud_dummy_speed, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD (Dummy Speed)")
 MACRO_CONFIG_INT(TcShowhudDummyAngle, tc_showhud_dummy_angle, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ingame HUD (Dummy Aim Angle)")
+
+// LClient
+MACRO_CONFIG_INT(LcLowAimbot, lc_low_aimbot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable LClient aimbot")
+MACRO_CONFIG_INT(LcLowAimbotRange, lc_low_aimbot_range, 50, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "LClient aimbot range (percentage)")
+MACRO_CONFIG_INT(LcLowAimbotFOV, lc_low_aimbot_fov, 45, 1, 360, CFGFLAG_CLIENT | CFGFLAG_SAVE, "LClient aimbot FOV")
+MACRO_CONFIG_INT(LcLowAimbotSmoothing, lc_low_aimbot_smoothing, 0, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "LClient aimbot smoothing (0 = snappy)")
+MACRO_CONFIG_INT(LcLowTriggerbot, lc_low_triggerbot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable LClient weapon triggerbot")
+MACRO_CONFIG_INT(LcLowTriggerbotHook, lc_low_triggerbot_hook, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable LClient hook triggerbot")
+MACRO_CONFIG_INT(LcLowTriggerbotOnKey, lc_low_triggerbot_on_key, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Triggerbot works only when key is held")
+MACRO_CONFIG_INT(LcLowVisibleOnly, lc_low_visible_only, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Only target visible enemies (not behind walls)")
+MACRO_CONFIG_INT(LcLowAimbotOnKey, lc_low_aimbot_on_key, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Aimbot works only when key is held")
+MACRO_CONFIG_STR(LcLowAimbotBind, lc_low_aimbot_bind, 128, "mouse2", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Key bind for LClient aimbot")

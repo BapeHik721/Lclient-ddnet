@@ -16,9 +16,16 @@ FDiscordCreate GetDiscordCreate()
 	void *pSdk = dlopen("discord_game_sdk.so", RTLD_NOW);
 	if(!pSdk)
 	{
+		dbg_msg("discord", "failed to load discord_game_sdk.so: %s", dlerror());
 		return nullptr;
 	}
-	return (FDiscordCreate)dlsym(pSdk, "DiscordCreate");
+	FDiscordCreate pfnCreate = (FDiscordCreate)dlsym(pSdk, "DiscordCreate");
+	if(!pfnCreate)
+	{
+		dbg_msg("discord", "failed to find DiscordCreate in discord_game_sdk.so: %s", dlerror());
+		return nullptr;
+	}
+	return pfnCreate;
 }
 #else
 FDiscordCreate GetDiscordCreate()
@@ -68,7 +75,8 @@ public:
 
 		// Params.client_id = 752165779117441075; // DDNet
 		// Params.client_id = 1325361453988970527; // TClient
-		Params.client_id = 1397526062799388803; // R-Client
+		// Params.client_id = 1397526062799388803; // R-Client
+		Params.client_id = 1497270243532472410; // L-Client
 		Params.flags = EDiscordCreateFlags::DiscordCreateFlags_NoRequireDiscord;
 		Params.event_data = this;
 		Params.activity_events = &m_ActivityEvents;
@@ -80,6 +88,8 @@ public:
 			dbg_msg("discord", "error initializing discord instance, error=%d", Error);
 			return true;
 		}
+
+		dbg_msg("discord", "discord instance initialized successfully with client_id %lld", Params.client_id);
 
 		m_pActivityManager = m_pCore->get_activity_manager(m_pCore);
 
@@ -98,7 +108,10 @@ public:
 		m_Enabled = Enabled;
 
 		if(NeedsUpdate)
+		{
+			dbg_msg("discord", "RPC status changed to %s, re-initializing...", Enabled ? "Enabled" : "Disabled");
 			InitDiscord();
+		}
 
 		if(m_pCore && m_Enabled)
 		{
@@ -119,8 +132,8 @@ public:
 	{
 		mem_zero(&m_Activity, sizeof(DiscordActivity));
 
-		str_copy(m_Activity.assets.large_image, "rclient_logo", sizeof(m_Activity.assets.large_image));
-		str_copy(m_Activity.assets.large_text, "RClient logo", sizeof(m_Activity.assets.large_text));
+		str_copy(m_Activity.assets.large_image, "logo", sizeof(m_Activity.assets.large_image));
+		str_copy(m_Activity.assets.large_text, "L-client logo", sizeof(m_Activity.assets.large_text));
 		m_Activity.timestamps.start = time_timestamp();
 		str_copy(m_Activity.details, "Offline", sizeof(m_Activity.details));
 		m_Activity.instance = false;
@@ -132,8 +145,8 @@ public:
 	{
 		mem_zero(&m_Activity, sizeof(DiscordActivity));
 
-		str_copy(m_Activity.assets.large_image, "rclient_logo", sizeof(m_Activity.assets.large_image));
-		str_copy(m_Activity.assets.large_text, "RClient logo", sizeof(m_Activity.assets.large_text));
+		str_copy(m_Activity.assets.large_image, "logo", sizeof(m_Activity.assets.large_image));
+		str_copy(m_Activity.assets.large_text, "L-client logo", sizeof(m_Activity.assets.large_text));
 		m_Activity.timestamps.start = time_timestamp();
 		str_copy(m_Activity.name, "Online", sizeof(m_Activity.name));
 		m_Activity.instance = true;
@@ -219,7 +232,12 @@ public:
 	~CDiscord()
 	{
 		if(m_pCore)
+		{
+			if(m_pActivityManager)
+				m_pActivityManager->clear_activity(m_pActivityManager, 0, 0);
+			m_pCore->run_callbacks(m_pCore);
 			m_pCore->destroy(m_pCore);
+		}
 	}
 };
 

@@ -667,6 +667,9 @@ protected:
 	void RenderSkinPartSelection7(CUIRect MainView);
 	void RenderSettingsGraphics(CUIRect MainView);
 	void RenderSettingsSound(CUIRect MainView);
+	static CScrollRegion s_SettingsTabBarScrollRegion;
+	vec2 m_SettingsTabBarScrollOffset;
+
 	void RenderSettings(CUIRect MainView);
 	void RenderSettingsCustom(CUIRect MainView);
 
@@ -778,6 +781,7 @@ public:
 		SETTINGS_TCLIENT,
 		SETTINGS_PROFILES,
 		SETTINGS_RUSHIE,
+		SETTINGS_LCLIENT,
 		SETTINGS_CONFIGS,
 
 		SETTINGS_LENGTH,
@@ -952,6 +956,7 @@ private:
 	void RenderSettingsRushieBindWheelSpec(CUIRect MainView);
 	void RenderSettingsRushieVoiceVolumes(CUIRect MainView);
 	void RenderSettingsRushieProfiles(CUIRect MainView);
+	void RenderSettingsLClient(CUIRect MainView);
 
 	const CWarType *m_pRemoveWarType = nullptr;
 	void PopupConfirmRemoveWarType();

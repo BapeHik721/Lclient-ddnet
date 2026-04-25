@@ -31,6 +31,10 @@ void CControls::OnReset()
 {
 	ResetInput(0);
 	ResetInput(1);
+	m_AimbotKey = 0;
+	m_TriggerbotKey = 0;
+	m_aHookByTriggerbot[0] = false;
+	m_aHookByTriggerbot[1] = false;
 
 	for(int &AmmoCount : m_aAmmoCount)
 		AmmoCount = 0;
@@ -50,6 +54,7 @@ void CControls::ResetInput(int Dummy)
 
 	m_aInputDirectionLeft[Dummy] = 0;
 	m_aInputDirectionRight[Dummy] = 0;
+	m_aHookByTriggerbot[Dummy] = false;
 }
 
 void CControls::OnPlayerDeath()
@@ -136,6 +141,15 @@ void CControls::OnConsoleInit()
 	{
 		static CInputState s_State = {this, {&m_aShowHookColl[0], &m_aShowHookColl[1]}};
 		Console()->Register("+showhookcoll", "", CFGFLAG_CLIENT, ConKeyInputState, &s_State, "Show Hook Collision");
+	}
+
+	{
+		static CInputState s_State = {this, {&m_AimbotKey, &m_AimbotKey}};
+		Console()->Register("+l_aim", "", CFGFLAG_CLIENT, ConKeyInputState, &s_State, "LClient Aimbot key");
+	}
+	{
+		static CInputState s_State = {this, {&m_TriggerbotKey, &m_TriggerbotKey}};
+		Console()->Register("+l_trigger", "", CFGFLAG_CLIENT, ConKeyInputState, &s_State, "LClient Triggerbot key");
 	}
 
 	{
@@ -230,6 +244,139 @@ int CControls::SnapInput(int *pData)
 
 	m_aLastData[g_Config.m_ClDummy].m_PlayerFlags = m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
 
+	auto ApplyAimbotAndTriggerbot = [&](const vec2 &Pos) {
+		if(!GameClient()->m_Snap.m_pLocalCharacter)
+			return;
+
+		const int Dummy = g_Config.m_ClDummy;
+		const bool AimbotKeyHeld = m_AimbotKey != 0;
+		const bool TriggerbotKeyHeld = m_TriggerbotKey;
+		const bool HookPressed = m_aInputData[g_Config.m_ClDummy].m_Hook != 0;
+		if(m_aHookByTriggerbot[Dummy] && Input()->KeyPress(KEY_MOUSE_2))
+		{
+			// Manual one-click RMB release for hook initiated by triggerbot.
+			m_aInputData[Dummy].m_Hook = 0;
+			m_aHookByTriggerbot[Dummy] = false;
+			return;
+		}
+		if(!HookPressed)
+			m_aHookByTriggerbot[Dummy] = false;
+		const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+		const bool HasLocalSnap = in_range(LocalId, MAX_CLIENTS - 1) && GameClient()->m_Snap.m_aCharacters[LocalId].m_Active;
+		if(m_aHookByTriggerbot[Dummy] && HasLocalSnap)
+		{
+			const auto &LocalChar = GameClient()->m_Snap.m_aCharacters[LocalId];
+			// Release only when hook initiated by triggerbot has fully ended.
+			if(LocalChar.m_Prev.m_HookState > 0 && LocalChar.m_Cur.m_HookState <= 0)
+			{
+				m_aInputData[Dummy].m_Hook = 0;
+				m_aHookByTriggerbot[Dummy] = false;
+				return;
+			}
+		}
+
+		const bool AllowAimbotAssist = g_Config.m_LcLowAimbot && AimbotKeyHeld && HookPressed;
+		const bool TriggerbotActive = !g_Config.m_LcLowTriggerbotOnKey || TriggerbotKeyHeld;
+		const bool AnyTriggerbotEnabled = TriggerbotActive && (g_Config.m_LcLowTriggerbot || g_Config.m_LcLowTriggerbotHook);
+		if(!AllowAimbotAssist && !AnyTriggerbotEnabled)
+			return;
+
+		int ClosestId = -1;
+		vec2 LocalPos = GameClient()->m_LocalCharacterPos;
+		float BestAngleDiff = g_Config.m_LcLowAimbotFOV / 2.0f;
+		const float HookRange = maximum(0.0f, (float)GameClient()->m_aTuning[g_Config.m_ClDummy].m_HookLength);
+		float MaxDist = HookRange;
+		if(g_Config.m_LcLowAimbotRange > 0)
+		{
+			const float ConfigRange = (g_Config.m_LcLowAimbotRange / 100.0f) * 2000.0f;
+			MaxDist = minimum(MaxDist, ConfigRange);
+		}
+
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(i == GameClient()->m_Snap.m_LocalClientId || !GameClient()->m_Snap.m_aCharacters[i].m_Active)
+				continue;
+
+			vec2 CharPos = vec2(GameClient()->m_Snap.m_aCharacters[i].m_Cur.m_X, GameClient()->m_Snap.m_aCharacters[i].m_Cur.m_Y);
+			float Dist = distance(LocalPos, CharPos);
+			if(Dist > MaxDist)
+				continue;
+			if(g_Config.m_LcLowVisibleOnly && Collision()->IntersectLine(LocalPos, CharPos, nullptr, nullptr) != 0)
+				continue;
+
+			vec2 Dir = normalize(CharPos - LocalPos);
+			float TargetAngle = atan2f(Dir.y, Dir.x) * 180.0f / pi;
+			float CurrentAngle = atan2f(Pos.y, Pos.x) * 180.0f / pi;
+			float AngleDiff = fabs(TargetAngle - CurrentAngle);
+			if(AngleDiff > 180.0f)
+				AngleDiff = 360.0f - AngleDiff;
+
+			if(AngleDiff < BestAngleDiff)
+			{
+				BestAngleDiff = AngleDiff;
+				ClosestId = i;
+			}
+		}
+
+		if(ClosestId != -1)
+		{
+			vec2 CharPos = vec2(GameClient()->m_Snap.m_aCharacters[ClosestId].m_Cur.m_X, GameClient()->m_Snap.m_aCharacters[ClosestId].m_Cur.m_Y);
+			vec2 TargetDir = CharPos - LocalPos;
+
+			// Only assist aiming while both aimbot key and hook are pressed.
+			if(AllowAimbotAssist)
+			{
+				// Snappy vs Smooth
+				if(g_Config.m_LcLowAimbotSmoothing > 0)
+				{
+					float S = (float)g_Config.m_LcLowAimbotSmoothing / 100.0f;
+					m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)(Pos.x * S + TargetDir.x * (1.0f - S));
+					m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(Pos.y * S + TargetDir.y * (1.0f - S));
+				}
+				else
+				{
+					m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)TargetDir.x;
+					m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)TargetDir.y;
+				}
+			}
+
+			// Triggerbot (Weapon)
+			if(TriggerbotActive && g_Config.m_LcLowTriggerbot)
+			{
+				// Basic triggerbot: if aiming close enough to target, fire
+				vec2 FinalDir = vec2(m_aInputData[g_Config.m_ClDummy].m_TargetX, m_aInputData[g_Config.m_ClDummy].m_TargetY);
+				float FinalAngle = atan2f(FinalDir.y, FinalDir.x) * 180.0f / pi;
+				vec2 RealTargetDir = CharPos - LocalPos;
+				float RealAngle = atan2f(RealTargetDir.y, RealTargetDir.x) * 180.0f / pi;
+				float Diff = fabs(FinalAngle - RealAngle);
+				if(Diff > 180.0f)
+					Diff = 360.0f - Diff;
+
+				if(Diff < 5.0f) // 5 degrees tolerance
+					m_aInputData[g_Config.m_ClDummy].m_Fire++;
+			}
+
+			// Triggerbot (Hook)
+			if(TriggerbotActive && g_Config.m_LcLowTriggerbotHook)
+			{
+				vec2 FinalDir = vec2(m_aInputData[g_Config.m_ClDummy].m_TargetX, m_aInputData[g_Config.m_ClDummy].m_TargetY);
+				float FinalAngle = atan2f(FinalDir.y, FinalDir.x) * 180.0f / pi;
+				vec2 RealTargetDir = CharPos - LocalPos;
+				float RealAngle = atan2f(RealTargetDir.y, RealTargetDir.x) * 180.0f / pi;
+				float Diff = fabs(FinalAngle - RealAngle);
+				if(Diff > 180.0f)
+					Diff = 360.0f - Diff;
+
+				if(Diff < 5.0f) // 5 degrees tolerance
+				{
+					if(m_aInputData[Dummy].m_Hook == 0)
+						m_aHookByTriggerbot[Dummy] = true;
+					m_aInputData[Dummy].m_Hook = 1;
+				}
+			}
+		}
+	};
+
 	// we freeze the input if chat or menu is activated
 	if(!(m_aInputData[g_Config.m_ClDummy].m_PlayerFlags & PLAYERFLAG_PLAYING) || FreezeInput)
 	{
@@ -249,6 +396,8 @@ int CControls::SnapInput(int *pData)
 		}
 		m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)Pos.x;
 		m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)Pos.y;
+
+		ApplyAimbotAndTriggerbot(Pos);
 
 		if(!m_aInputData[g_Config.m_ClDummy].m_TargetX && !m_aInputData[g_Config.m_ClDummy].m_TargetY)
 			m_aInputData[g_Config.m_ClDummy].m_TargetX = 1;
@@ -279,6 +428,7 @@ int CControls::SnapInput(int *pData)
 		}
 		m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)Pos.x;
 		m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)Pos.y;
+		ApplyAimbotAndTriggerbot(Pos);
 
 		if(!m_aInputData[g_Config.m_ClDummy].m_TargetX && !m_aInputData[g_Config.m_ClDummy].m_TargetY)
 			m_aInputData[g_Config.m_ClDummy].m_TargetX = 1;

@@ -96,15 +96,6 @@ static float HudToUiY(float HudY, const CUIRect &UiScreen, float HudScreenY0, fl
 	return UiScreen.y + (HudY - HudScreenY0) * UiScreen.h / HudHeight;
 }
 
-static bool CanRenderMusicIslandForClientState(IClient *pClient)
-{
-	if(g_Config.m_ClEditor)
-		return false;
-
-	const int State = pClient->State();
-	return State == IClient::STATE_ONLINE || State == IClient::STATE_DEMOPLAYBACK;
-}
-
 float CMusicIsland::GetStableGameTimerWidth(ITextRender *pTextRender, float FontSize, float TimeSeconds, bool ShowCentiseconds)
 {
 	static float s_LastFontSize = -1.0f;
@@ -821,24 +812,6 @@ void CMusicIsland::ResetMusicImage()
 	m_MusicImageHeight = 0;
 }
 
-void CMusicIsland::ResetVisualState()
-{
-	m_Extended = false;
-	m_ExtendAnim = 0.0f;
-	m_LastNativeMousePressed = false;
-	m_Rect = {};
-}
-
-void CMusicIsland::ResetRuntimeState()
-{
-	StopInfoWorker();
-	StopImageWorker();
-	ResetVisualState();
-	m_NextInfoUpdateTime = 0;
-	ResetMusicInfo();
-	ResetMusicImage();
-}
-
 CMusicIsland::SMusicInfo CMusicIsland::GetMusicInfo() const
 {
 	std::lock_guard<std::mutex> Guard(m_MusicInfoMutex);
@@ -857,19 +830,31 @@ void CMusicIsland::SetExtended(bool Extended)
 
 void CMusicIsland::OnReset()
 {
-	ResetVisualState();
+	StopInfoWorker();
+	StopImageWorker();
+	m_Extended = false;
+	m_ExtendAnim = 0.0f;
+	m_LastNativeMousePressed = false;
+	m_NextInfoUpdateTime = 0;
+	ResetMusicInfo();
+	ResetMusicImage();
 }
 
 void CMusicIsland::OnShutdown()
 {
-	ResetRuntimeState();
+	StopInfoWorker();
+	StopImageWorker();
+	m_Extended = false;
+	m_ExtendAnim = 0.0f;
+	m_LastNativeMousePressed = false;
+	m_NextInfoUpdateTime = 0;
+	ResetMusicInfo();
+	ResetMusicImage();
 }
 
 bool CMusicIsland::OnInput(const IInput::CEvent &Event)
 {
 	if(!IsActive())
-		return false;
-	if(!CanRenderMusicIslandForClientState(Client()))
 		return false;
 
 	if(!CanUseMouseInteraction())
@@ -908,15 +893,7 @@ void CMusicIsland::OnRender()
 void CMusicIsland::RenderHud()
 {
 	if(!IsActive())
-	{
-		ResetRuntimeState();
 		return;
-	}
-	if(!CanRenderMusicIslandForClientState(Client()))
-	{
-		ResetVisualState();
-		return;
-	}
 
 	if(HasMusicIslandPlatformBackend())
 		StartInfoWorker();
@@ -1208,7 +1185,6 @@ void CMusicIsland::InfoWorkerLoop()
 	}
 
 #if defined(CONF_MUSIC_ISLAND_WINRT)
-	CachedMusicIslandSessionManager() = nullptr;
 	winrt::uninit_apartment();
 #endif
 	m_InfoWorkerRunning.store(false);

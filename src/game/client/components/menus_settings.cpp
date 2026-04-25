@@ -1473,17 +1473,35 @@ void CMenus::RenderSettings(CUIRect MainView)
 		TCLocalize("TClient"),
 		Localize("Profiles"),
 		Localize("Rushie"),
+		Localize("LClient"),
 		Localize("Configs")};
 
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
+	CScrollRegionParams ScrollParams;
+	ScrollParams.m_ScrollbarWidth = 5.0f;
+	ScrollParams.m_ScrollbarMargin = 0.0f;
+	ScrollParams.m_ScrollUnit = 36.0f;
+	ScrollParams.m_Flags = CScrollRegionParams::FLAG_CONTENT_STATIC_WIDTH;
+	s_SettingsTabBarScrollRegion.Begin(&TabBar, &m_SettingsTabBarScrollOffset, &ScrollParams);
+
+	CUIRect Content = TabBar;
+	Content.y += m_SettingsTabBarScrollOffset.y;
+
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
 	{
-		TabBar.HSplitTop(10.0f, nullptr, &TabBar);
-		TabBar.HSplitTop(26.0f, &Button, &TabBar);
-		if(DoButton_MenuTab(&s_aTabButtons[i], apTabs[i], g_Config.m_UiSettingsPage == i, &Button, IGraphics::CORNER_R, &m_aAnimatorsSettingsTab[i]))
-			g_Config.m_UiSettingsPage = i;
+		CUIRect Row;
+		Content.HSplitTop(10.0f, nullptr, &Content);
+		Content.HSplitTop(26.0f, &Row, &Content);
+		
+		if(s_SettingsTabBarScrollRegion.AddRect(Row))
+		{
+			if(DoButton_MenuTab(&s_aTabButtons[i], apTabs[i], g_Config.m_UiSettingsPage == i, &Row, IGraphics::CORNER_R, &m_aAnimatorsSettingsTab[i]))
+				g_Config.m_UiSettingsPage = i;
+		}
 	}
+
+	s_SettingsTabBarScrollRegion.End();
 
 	if(g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE)
 	{
@@ -1552,6 +1570,11 @@ void CMenus::RenderSettings(CUIRect MainView)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(15);
 		RenderSettingsRushie(MainView);
+	}
+	else if(g_Config.m_UiSettingsPage == SETTINGS_LCLIENT)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(15);
+		RenderSettingsLClient(MainView);
 	}
 	else if(g_Config.m_UiSettingsPage == SETTINGS_CONFIGS)
 	{

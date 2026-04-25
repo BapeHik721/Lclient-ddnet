@@ -408,7 +408,9 @@ if(NOT MSVC AND NOT HAIKU)
     add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-format) # Don't warn about format strings in release mode since our `str_format` optimization is incompatible with it.
   endif()
   add_c_compiler_flag_if_supported(OUR_FLAGS_DEP -Wno-implicit-function-declaration)
-  add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-nullability-completeness) # Mac OS build on github
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-nullability-completeness) # Mac OS build on github
+  endif()
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wduplicated-cond)
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wduplicated-branches)
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wlogical-op)
@@ -2686,6 +2688,7 @@ if(CLIENT)
     components/rclient/menu/menus_start_rclient.cpp
     components/rclient/menu/menus_start_rclient.h
     components/rclient/menus_rclient.cpp
+    components/lclient/menus_lclient.cpp
     components/rclient/menus_rclient_clickgui.cpp
     components/rclient/menus_rclient_clickgui.h
     components/rclient/music_island.cpp

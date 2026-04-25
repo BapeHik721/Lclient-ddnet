@@ -6,6 +6,7 @@ on:
       - gh-readonly-queue/**
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 env:
   RCLIENT_SECRET_TOKEN: ${{ secrets.RCLIENT_SECRET_TOKEN }}

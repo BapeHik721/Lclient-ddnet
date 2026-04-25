@@ -46,13 +46,31 @@ else()
   message(FATAL_ERROR "Couldn't parse RClient version from src/game/version.h")
 endif()
 
-if(RCLIENT_VERSION_LINE STREQUAL "0")
-  project(RClient VERSION ${RCLIENT_VERSION_MAJOR}.${RCLIENT_VERSION_MINOR})
+file(STRINGS src/game/version.h TCLIENT_VERSION_LINE
+  LIMIT_COUNT 1
+  REGEX "^#define TCLIENT_VERSION "
+)
+
+if(TCLIENT_VERSION_LINE MATCHES "([0-9]+)\\.([0-9]+)\\.([0-9]+)")
+  set(TCLIENT_VERSION_MAJOR ${CMAKE_MATCH_1})
+  set(TCLIENT_VERSION_MINOR ${CMAKE_MATCH_2})
+  set(TCLIENT_VERSION_PATCH ${CMAKE_MATCH_3})
+elseif(TCLIENT_VERSION_LINE MATCHES "([0-9]+)\\.([0-9]+)")
+  set(TCLIENT_VERSION_MAJOR ${CMAKE_MATCH_1})
+  set(TCLIENT_VERSION_MINOR ${CMAKE_MATCH_2})
+  set(TCLIENT_VERSION_PATCH "0")
 else()
-  project(RClient VERSION ${RCLIENT_VERSION_MAJOR}.${RCLIENT_VERSION_MINOR}.${RCLIENT_VERSION_PATCH})
+  message(FATAL_ERROR "Couldn't parse TClient version from src/game/version.h")
+endif()
+
+if(RCLIENT_VERSION_LINE STREQUAL "0")
+  project(RushieClient VERSION ${RCLIENT_VERSION_MAJOR}.${RCLIENT_VERSION_MINOR})
+else()
+  project(RushieClient VERSION ${RCLIENT_VERSION_MAJOR}.${RCLIENT_VERSION_MINOR}.${RCLIENT_VERSION_PATCH})
 endif()
 
 file(APPEND "${DATA_VERSION_FILE}" "RClient ${RCLIENT_VERSION_MAJOR}.${RCLIENT_VERSION_MINOR}.${RCLIENT_VERSION_PATCH}\n")
+file(APPEND "${DATA_VERSION_FILE}" "TClient ${TCLIENT_VERSION_MAJOR}.${TCLIENT_VERSION_MINOR}.${TCLIENT_VERSION_PATCH}\n")
 
 # </TClient>
 
@@ -2643,6 +2661,7 @@ if(CLIENT)
     components/items.h
     components/key_binder.cpp
     components/key_binder.h
+    components/lclient/menus_lclient.cpp
     components/local_server.cpp
     components/local_server.h
     components/mapimages.cpp
@@ -2688,7 +2707,6 @@ if(CLIENT)
     components/rclient/menu/menus_start_rclient.cpp
     components/rclient/menu/menus_start_rclient.h
     components/rclient/menus_rclient.cpp
-    components/lclient/menus_lclient.cpp
     components/rclient/menus_rclient_clickgui.cpp
     components/rclient/menus_rclient_clickgui.h
     components/rclient/music_island.cpp

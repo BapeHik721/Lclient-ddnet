@@ -53,13 +53,14 @@ jobs:
           libglib2.0-dev libfreetype6-dev libnotify-dev libsdl2-dev libsqlite3-dev \
           libvulkan-dev glslang-tools spirv-tools \
           libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
-          libx264-dev libpng-dev libasan6 valgrind gcovr libglew-dev -y
+          libx264-dev libpng-dev libasan6 valgrind gcovr libglew-dev \
+          libopus-dev libopusfile-dev libwavpack-dev libssl-dev curl -y
 
     - name: Prepare macOS
       if: contains(matrix.os, 'macOS')
       run: |
         brew update || true
-        brew install llvm pkg-config ninja molten-vk vulkan-headers glslang spirv-tools glew googletest libpng x264 || true
+        brew install llvm pkg-config ninja molten-vk vulkan-headers glslang spirv-tools glew googletest libpng x264 opus opusfile wavpack libwebsockets openssl@3 || true
         brew upgrade freetype
         pip3 install --break-system-packages dmgbuild
         echo /Library/Frameworks/Python.framework/Versions/3.12/bin >> $GITHUB_PATH
